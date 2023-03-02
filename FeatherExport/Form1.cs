@@ -24,41 +24,80 @@ namespace FeatherExport
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            string MainPath = @"C:\\superExport\\";
+            
+            List<string> fileList = new List<string>();
+
+            string[] txtFiles = Directory.GetFiles(MainPath, "*.txt"); // Obtiene los archivos .txt en la carpeta
+
+            foreach (string txtFile in txtFiles)
+            {
+                 
+                if (txtFile.Contains("pagos")) {
+
+                    string nombreArchivo = Path.GetFileName(txtFile);
+                    string dateFiltered = nombreArchivo.Replace("ventas_pagos_", "");
+                    Console.WriteLine(dateFiltered);
+                    fileList.Add(dateFiltered);
+
+                }
+            }
+
+            string FIleName = "20230206.txt";
+            List<Detalle> Detalles;
+
             var configuration = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 HasHeaderRecord = false
             };
-            using (var reader = new StreamReader(@"C:\\ventas_detalle_20230216.txt"))
+            using (var reader = new StreamReader(MainPath+"ventas_detalle_"+FIleName))
             using (var csv = new CsvReader(reader, configuration))
             {
-                //csv.Context.TypeConverterCache.AddConverter<decimal>(new DecimalConverterWithEmptyValue());
-                //csv.Context.TypeConverterCache.AddConverter<int>(new Int32ConverterWithEmptyValue());
+               
 
-                List<Detalle> Detalles = csv.GetRecords<Detalle>().ToList();
-
-
-                foreach (var item in Detalles)
-                {
-                    Console.WriteLine(item.check);
-                }
+                Detalles = csv.GetRecords<Detalle>().ToList();
                 detalleBindingSource.DataSource = Detalles;
             }
 
            
-            using (var reader = new StreamReader(@"C:\\ventas_pagos_20230216.txt"))
+            using (var reader = new StreamReader(MainPath + "ventas_pagos_" + FIleName))
             using (var csv = new CsvReader(reader, configuration))
             {
                 csv.Context.TypeConverterCache.AddConverter<decimal>(new DecimalConverterWithEmptyValue());
                 csv.Context.TypeConverterCache.AddConverter<int>(new Int32ConverterWithEmptyValue());
 
-                List<Transaccion> Detalles = csv.GetRecords<Transaccion>().ToList();
+                List<Transaccion> pagos = csv.GetRecords<Transaccion>().ToList();
 
 
-                foreach (var item in Detalles)
+               
+                var nombresRepetidos = pagos
+                .GroupBy(p => p.check)
+                .SelectMany(g => g) 
+                .Distinct();
+
+                foreach (Transaccion transaccion in nombresRepetidos)
                 {
-                    Console.WriteLine(item.check);
+                    Console.WriteLine("El nombre '{0}' se repite en la lista", transaccion.check);
+                    IttMove ittMove = new IttMove();
+                    //ittMove.ticket_id = persona.check;
+                    DateTime dateTime = Utils.ConvertirStringAFechaHora(transaccion.date.ToString(),transaccion.hour,transaccion.minute,transaccion.seconds);
+
+
+
+                    List<Detalle> result = Detalles.Where(p => p.check.Trim() == transaccion.check.Trim()).ToList();
+
+                    foreach (var detalle in result)
+                    {
+                        if (Camaleon.CheckClass(detalle.itemclass) == 0) {
+                            Camaleon.CreateNewClass(detalle.itemclass);
+                        
+                        }
+                    }
+
                 }
-                //detalleBindingSource.DataSource = Detalles;
+
+
+                transaccionBindingSource.DataSource = pagos;
             }
         }
     }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace FeatherExport
 {
@@ -30,4 +31,25 @@ namespace FeatherExport
             return base.ConvertFromString(text, row, memberMapData); // Utiliza el comportamiento predeterminado para valores no vacíos.
         }
     }
+
+    public static class Utils
+    {
+        public static DateTime ConvertirStringAFechaHora(string dateString, int hora, int minuto, int segundo)
+        {
+            
+            string dateTimeString = dateString + hora.ToString("D2") + minuto.ToString("D2") + segundo.ToString("D2");
+            DateTime date;
+            if (DateTime.TryParseExact(dateTimeString, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
+            {
+                return date;
+            }
+            else
+            {
+                return DateTime.MinValue;
+            }
+        }
+
+    }
+
+
 }
